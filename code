@@ -1,0 +1,1195 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>CTR Micron Manpower Heatmap</title>
+
+  <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
+
+  <style>
+    :root {
+      --bg: #f5f7fb;
+      --card: #ffffff;
+      --line: #d9e1ea;
+      --text: #1f2937;
+      --muted: #6b7280;
+      --green: #92d050;
+      --yellow: #ffd966;
+      --orange: #f4b183;
+      --red: #f4cccc;
+      --blue: #1f4e78;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      font-family: Arial, Helvetica, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+    }
+
+    .app {
+      max-width: 1550px;
+      margin: 0 auto;
+      padding: 20px;
+    }
+
+    .topbar {
+      display: grid;
+      grid-template-columns: 1.2fr 1fr;
+      gap: 16px;
+      margin-bottom: 16px;
+    }
+
+    .content {
+      display: grid;
+      grid-template-columns: 420px 1fr;
+      gap: 16px;
+      align-items: start;
+    }
+
+    .panel {
+      background: var(--card);
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      box-shadow: 0 8px 24px rgba(0,0,0,0.06);
+      padding: 16px;
+    }
+
+    h1 {
+      margin: 0 0 12px;
+      font-size: 24px;
+    }
+
+    h2 {
+      margin: 0;
+      font-size: 18px;
+    }
+
+    label {
+      font-size: 13px;
+      color: var(--muted);
+      display: block;
+      margin-bottom: 6px;
+    }
+
+    input, select, button {
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      padding: 10px 12px;
+      font: inherit;
+      background: #fff;
+    }
+
+    button {
+      cursor: pointer;
+      border: 1px solid #c9d2dc;
+      background: #fff;
+      transition: 0.15s ease;
+    }
+
+    button:hover { transform: translateY(-1px); }
+
+    .primary {
+      background: var(--blue);
+      color: #fff;
+      border-color: var(--blue);
+    }
+
+    .controls {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+      align-items: end;
+    }
+
+    .download-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+      align-items: end;
+    }
+
+    .footer-actions {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      margin-top: 12px;
+    }
+
+    .legend {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      align-items: center;
+      margin-top: 10px;
+    }
+
+    .legend-item {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 13px;
+      color: var(--muted);
+    }
+
+    .swatch {
+      width: 18px;
+      height: 18px;
+      border-radius: 6px;
+      border: 1px solid rgba(0,0,0,0.08);
+    }
+
+    .small-note {
+      font-size: 12px;
+      color: var(--muted);
+      margin-top: 8px;
+      line-height: 1.5;
+    }
+
+    .all-level-total {
+      padding: 12px 16px;
+      background: linear-gradient(135deg, #1f4e78, #2d6aa3);
+      color: #fff;
+      border-radius: 14px;
+      font-size: 16px;
+      font-weight: 700;
+      box-shadow: 0 6px 18px rgba(31,78,120,0.18);
+      min-width: 280px;
+      text-align: center;
+    }
+
+    .level-breakdown {
+      margin-top: 10px;
+      font-size: 13px;
+      color: var(--text);
+      line-height: 1.6;
+      font-weight: 600;
+    }
+
+    .form-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+    }
+
+    .form-grid .full { grid-column: 1 / -1; }
+
+    .trades-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+      margin-top: 10px;
+    }
+
+    .table-wrap {
+      max-height: 320px;
+      overflow: auto;
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      margin-top: 12px;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 13px;
+    }
+
+    th, td {
+      border-bottom: 1px solid #edf2f7;
+      padding: 8px 10px;
+      text-align: left;
+      white-space: nowrap;
+    }
+
+    th {
+      position: sticky;
+      top: 0;
+      background: #f8fbff;
+      z-index: 1;
+    }
+
+    .plan-wrap {
+      overflow: auto;
+    }
+
+    .plan-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      gap: 12px;
+      margin-bottom: 12px;
+      flex-wrap: wrap;
+    }
+
+    .plan-title-row {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      flex-wrap: wrap;
+    }
+
+    .tabs {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+
+    .tab.active {
+      background: var(--blue);
+      color: #fff;
+      border-color: var(--blue);
+    }
+
+    .stats {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    .stat {
+      padding: 8px 10px;
+      background: #f8fbff;
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      font-size: 13px;
+    }
+
+    /* =========================
+       LIVE PAGE HEATMAP
+       ========================= */
+    .heatmap-stage {
+      position: relative;
+      display: inline-block;
+      padding-top: 24px;   /* top labels room */
+      padding-left: 54px;  /* left labels room */
+    }
+
+    .plan {
+      display: grid;
+      grid-template-columns: repeat(4, 155px);
+      grid-template-rows: repeat(8, 145px);
+      gap: 0;
+      align-items: start;
+      justify-content: start;
+      background: #fff;
+      border: 1px solid var(--line);
+      border-radius: 18px;
+      overflow: hidden;
+      min-width: 620px;
+    }
+
+    .zone {
+      width: 155px;
+      height: 145px;
+      border: 1px solid #9a9a9a;
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr 1fr;
+      grid-template-rows: 1.1fr 1.1fr 1.2fr 1fr 1fr 1fr;
+      background: #fff;
+    }
+
+    .zone > div {
+      border-right: 1px solid rgba(0,0,0,0.12);
+      border-bottom: 1px solid rgba(0,0,0,0.12);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 11px;
+      padding: 2px 4px;
+      text-align: center;
+      color: #555;
+    }
+
+    .zone > div.label,
+    .zone > div.value {
+      font-weight: 400;
+    }
+
+    .zone > div.strong,
+    .zone > div.label.strong,
+    .zone > div.value.strong {
+      font-weight: 700;
+      color: #444;
+    }
+
+    .span-2 { grid-column: span 2; }
+
+    .zone.spacer {
+      border: none;
+      background: transparent;
+    }
+
+    .zone.spacer > div {
+      border: none;
+      background: transparent;
+    }
+
+    .zone.green { background: var(--green); }
+    .zone.yellow { background: var(--yellow); }
+    .zone.orange { background: var(--orange); }
+    .zone.red { background: var(--red); }
+
+    /* Axis labels on BOUNDARIES */
+    .axis-top-overlay,
+    .axis-left-overlay {
+      position: absolute;
+      pointer-events: none;
+    }
+
+    .axis-top-overlay {
+      top: 0;
+      left: 54px;
+      width: 620px;
+      height: 24px;
+    }
+
+    .axis-left-overlay {
+      top: 24px;
+      left: 0;
+      width: 54px;
+      height: 1160px;
+    }
+
+    .axis-label-top,
+    .axis-label-left {
+      position: absolute;
+      color: #e01919;
+      font-weight: 700;
+      line-height: 1;
+      white-space: nowrap;
+    }
+
+    .axis-label-top {
+      top: 0;
+      transform: translateX(-50%);
+      font-size: 16px;
+    }
+
+    .axis-label-left {
+      left: 0;
+      transform: translateY(-50%);
+      font-size: 16px;
+    }
+
+    /* =========================
+       PDF PAGE
+       ========================= */
+    .hidden-pdf-stage {
+      position: fixed;
+      left: -99999px;
+      top: 0;
+      width: 1100px;
+      background: #fff;
+      z-index: -1;
+    }
+
+    .pdf-page {
+      width: 1100px;
+      min-height: 1500px;
+      padding: 20px 20px 28px;
+      background: #fff;
+      page-break-after: always;
+      font-family: Arial, Helvetica, sans-serif;
+    }
+
+    .pdf-header-grid {
+      display: grid;
+      grid-template-columns: 1.2fr 1fr;
+      gap: 16px;
+      margin-bottom: 16px;
+    }
+
+    .pdf-panel {
+      background: #fff;
+      border: 1px solid #d9e1ea;
+      border-radius: 16px;
+      padding: 14px 16px;
+    }
+
+    .pdf-title {
+      margin: 0 0 10px;
+      font-size: 28px;
+      font-weight: 700;
+      color: #1f2937;
+    }
+
+    .pdf-controls-row {
+      display: flex;
+      gap: 12px;
+      align-items: center;
+      flex-wrap: wrap;
+      margin-bottom: 8px;
+    }
+
+    .pdf-date-box {
+      border: 1px solid #d9e1ea;
+      border-radius: 10px;
+      padding: 10px 12px;
+      min-width: 180px;
+      font-size: 16px;
+    }
+
+    .pdf-total-box {
+      padding: 12px 16px;
+      background: linear-gradient(135deg, #1f4e78, #2d6aa3);
+      color: #fff;
+      border-radius: 14px;
+      font-size: 18px;
+      font-weight: 700;
+      min-width: 320px;
+      text-align: center;
+    }
+
+    .pdf-level-breakdown {
+      font-size: 14px;
+      line-height: 1.7;
+      color: #1f2937;
+      font-weight: 600;
+    }
+
+    .pdf-right-note {
+      font-size: 14px;
+      color: #6b7280;
+      line-height: 1.5;
+    }
+
+    .pdf-main-panel {
+      background: #fff;
+      border: 1px solid #d9e1ea;
+      border-radius: 16px;
+      padding: 16px;
+    }
+
+    .pdf-plan-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      gap: 12px;
+      margin-bottom: 14px;
+      flex-wrap: wrap;
+    }
+
+    .pdf-floor-title {
+      font-size: 24px;
+      font-weight: 700;
+      color: #1f2937;
+    }
+
+    .pdf-tabs-static {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      margin-top: 8px;
+    }
+
+    .pdf-tab {
+      border: 1px solid #c9d2dc;
+      border-radius: 10px;
+      padding: 8px 12px;
+      font-size: 14px;
+      background: #fff;
+    }
+
+    .pdf-tab.active {
+      background: #1f4e78;
+      color: #fff;
+      border-color: #1f4e78;
+    }
+
+    .pdf-stats {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    .pdf-stat {
+      padding: 8px 10px;
+      background: #f8fbff;
+      border: 1px solid #d9e1ea;
+      border-radius: 10px;
+      font-size: 14px;
+    }
+
+    .pdf-heatmap-stage {
+      position: relative;
+      display: inline-block;
+      padding-top: 34px;
+      padding-left: 66px;
+    }
+
+    .pdf-plan {
+      display: grid;
+      grid-template-columns: repeat(4, 205px);
+      grid-template-rows: repeat(8, 175px);
+      gap: 0;
+      align-items: start;
+      justify-content: start;
+      background: #fff;
+      border: 1px solid #d9e1ea;
+      border-radius: 16px;
+      overflow: hidden;
+    }
+
+    .pdf-zone {
+      width: 205px;
+      height: 175px;
+      border: 1px solid #8f8f8f;
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr 1fr;
+      grid-template-rows: 1.1fr 1.1fr 1.2fr 1fr 1fr 1fr;
+      background: #fff;
+      font-size: 14px;
+    }
+
+    .pdf-zone > div {
+      border-right: 1px solid rgba(0,0,0,0.12);
+      border-bottom: 1px solid rgba(0,0,0,0.12);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 4px 6px;
+      text-align: center;
+      font-weight: 400;
+      color: #555;
+    }
+
+    .pdf-zone > div.strong,
+    .pdf-zone > div.label.strong,
+    .pdf-zone > div.value.strong {
+      font-weight: 700;
+      color: #444;
+    }
+
+    .pdf-zone.green { background: var(--green); }
+    .pdf-zone.yellow { background: var(--yellow); }
+    .pdf-zone.orange { background: var(--orange); }
+    .pdf-zone.red { background: var(--red); }
+
+    .pdf-zone.spacer {
+      border: none;
+      background: transparent;
+    }
+
+    .pdf-zone.spacer > div {
+      border: none;
+      background: transparent;
+    }
+
+    .pdf-axis-top-overlay,
+    .pdf-axis-left-overlay {
+      position: absolute;
+      pointer-events: none;
+    }
+
+    .pdf-axis-top-overlay {
+      top: 0;
+      left: 66px;
+      width: 820px;
+      height: 34px;
+    }
+
+    .pdf-axis-left-overlay {
+      top: 34px;
+      left: 0;
+      width: 66px;
+      height: 1400px;
+    }
+
+    .pdf-axis-label-top,
+    .pdf-axis-label-left {
+      position: absolute;
+      color: #e01919;
+      font-weight: 700;
+      line-height: 1;
+      white-space: nowrap;
+    }
+
+    .pdf-axis-label-top {
+      top: 0;
+      transform: translateX(-50%);
+      font-size: 24px;
+    }
+
+    .pdf-axis-label-left {
+      left: 0;
+      transform: translateY(-50%);
+      font-size: 24px;
+    }
+
+    @media (max-width: 1100px) {
+      .topbar, .content, .download-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <div class="topbar">
+      <div class="panel">
+        <h1>CTR Micron Manpower Heatmap</h1>
+
+        <div class="controls">
+          <div>
+            <label for="reportDate">Report Date</label>
+            <input id="reportDate" type="date" />
+          </div>
+          <div class="all-level-total" id="allLevelTotalStat">All level total manpower: 0</div>
+        </div>
+
+        <div id="levelBreakdown" class="level-breakdown"></div>
+
+        <div class="legend">
+          <div class="legend-item"><span class="swatch" style="background:#92d050"></span><span>&gt; 30</span></div>
+          <div class="legend-item"><span class="swatch" style="background:#ffd966"></span><span>15–30</span></div>
+          <div class="legend-item"><span class="swatch" style="background:#f4b183"></span><span>5–15</span></div>
+          <div class="legend-item"><span class="swatch" style="background:#f4cccc"></span><span>&lt; 5</span></div>
+        </div>
+      </div>
+
+      <div class="panel">
+        <h2>Download tools</h2>
+        <div class="download-grid">
+          <div>
+            <label for="downloadDate">Heatmap date</label>
+            <input id="downloadDate" type="date" />
+          </div>
+          <div class="footer-actions" style="margin-top:0; justify-content:flex-end;">
+            <button id="clearBtn">Clear all data</button>
+            <button id="downloadHeatmapBtn" class="primary">Download heatmap PDF</button>
+          </div>
+        </div>
+        <div class="small-note">
+          The PDF will contain one file with 9 pages: LG + L1 to L8. Each page is rendered like a printed page view.
+        </div>
+      </div>
+    </div>
+
+    <div class="content">
+      <div class="panel">
+        <h2>Supervisor input</h2>
+        <div class="form-grid">
+          <div>
+            <label for="supervisor">Supervisor</label>
+            <input id="supervisor" type="text" placeholder="e.g. John" />
+          </div>
+          <div>
+            <label for="floor">Floor</label>
+            <select id="floor"></select>
+          </div>
+          <div>
+            <label for="zone">Zone</label>
+            <select id="zone"></select>
+          </div>
+          <div class="full small-note">
+            Enter one supervisor submission at a time. Repeated submissions for the same supervisor + floor + zone will be updated.
+          </div>
+        </div>
+
+        <div class="trades-grid">
+          <div><label for="iron">Rebar</label><input id="iron" type="number" min="0" value="0" /></div>
+          <div><label for="carp">Formwork</label><input id="carp" type="number" min="0" value="0" /></div>
+          <div><label for="concrete">Concrete</label><input id="concrete" type="number" min="0" value="0" /></div>
+          <div><label for="signal">Signal</label><input id="signal" type="number" min="0" value="0" /></div>
+          <div><label for="precast">Precast</label><input id="precast" type="number" min="0" value="0" /></div>
+          <div><label for="safety">Safety</label><input id="safety" type="number" min="0" value="0" /></div>
+        </div>
+
+        <div class="footer-actions">
+          <button class="primary" id="saveBtn">Save / Update submission</button>
+        </div>
+
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Supervisor</th>
+                <th>Floor</th>
+                <th>Zone</th>
+                <th>Total</th>
+                <th>Action</th>
+              </tr>
+            </thead>
+            <tbody id="recordsBody"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="panel plan-wrap">
+        <div class="plan-header">
+          <div class="plan-title-row">
+            <h2 id="planTitle">CTR Micron Manpower Heatmap - LG</h2>
+            <div class="tabs" id="floorTabs"></div>
+          </div>
+          <div class="stats" id="floorStats"></div>
+        </div>
+
+        <div class="heatmap-stage">
+          <div class="axis-top-overlay" id="axisTopOverlay"></div>
+          <div class="axis-left-overlay" id="axisLeftOverlay"></div>
+          <div class="plan" id="plan"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div id="pdfStage" class="hidden-pdf-stage"></div>
+
+  <script>
+    const floors = ["LG", "L1", "L2", "L3", "L4", "L5", "L6", "L7", "L8"];
+
+    const zones = [
+      "5-1", "5-2", "5-3",
+      "2-7", "3-7", "4-7",
+      "1-6", "2-6", "3-6", "4-6",
+      "1-5", "2-5", "3-5", "4-5",
+      "1-4", "2-4", "3-4", "4-4",
+      "1-3", "2-3", "3-3", "4-3",
+      "1-2", "2-2", "3-2", "4-2",
+      "1-1", "2-1", "3-1", "4-1"
+    ];
+
+    const planGrid = [
+      [null, "5-1", "5-2", "5-3"],
+      [null, "2-7", "3-7", "4-7"],
+      ["1-6", "2-6", "3-6", "4-6"],
+      ["1-5", "2-5", "3-5", "4-5"],
+      ["1-4", "2-4", "3-4", "4-4"],
+      ["1-3", "2-3", "3-3", "4-3"],
+      ["1-2", "2-2", "3-2", "4-2"],
+      ["1-1", "2-1", "3-1", "4-1"]
+    ];
+
+    // boundary lines between zones, as you marked
+    const axisTopLabels = ["F1", "F5", "F9", "F15", "F22"];
+    const axisLeftLabels = ["FW7", "FW5", "FW1", "FU", "FQ", "FK", "FE", "FB", "FA3"];
+
+    // positions at boundaries, not center
+    const topBoundaryPositions = [0, 155, 310, 465, 620];
+    const leftBoundaryPositions = [0, 145, 290, 435, 580, 725, 870, 1015, 1160];
+
+    const pdfTopBoundaryPositions = [205, 410, 615, 820];
+    const pdfLeftBoundaryPositions = [0, 175, 350, 525, 700, 875, 1050, 1225];
+
+    const STORAGE_KEY = "manpower-heatmap-final-v3";
+    const DATE_KEY = "manpower-heatmap-date";
+    const defaultData = [];
+
+    let currentFloor = "LG";
+    let records = loadRecords();
+
+    const reportDate = document.getElementById("reportDate");
+    const downloadDate = document.getElementById("downloadDate");
+    const floorSelect = document.getElementById("floor");
+    const zoneSelect = document.getElementById("zone");
+    const floorTabs = document.getElementById("floorTabs");
+    const plan = document.getElementById("plan");
+    const axisTopOverlay = document.getElementById("axisTopOverlay");
+    const axisLeftOverlay = document.getElementById("axisLeftOverlay");
+    const planTitle = document.getElementById("planTitle");
+    const floorStats = document.getElementById("floorStats");
+    const recordsBody = document.getElementById("recordsBody");
+    const pdfStage = document.getElementById("pdfStage");
+    const allLevelTotalStat = document.getElementById("allLevelTotalStat");
+    const levelBreakdown = document.getElementById("levelBreakdown");
+
+    function init() {
+      initDate();
+      populateSelects();
+      renderBoundaryAxes();
+      renderTabs();
+      renderOverallTotals();
+      renderPlan();
+      renderRecords();
+      bindEvents();
+    }
+
+    function initDate() {
+      const savedDate = localStorage.getItem(DATE_KEY);
+      if (savedDate) {
+        reportDate.value = savedDate;
+        downloadDate.value = savedDate;
+      } else {
+        const today = new Date().toISOString().slice(0, 10);
+        reportDate.value = today;
+        downloadDate.value = today;
+        localStorage.setItem(DATE_KEY, today);
+      }
+    }
+
+    function populateSelects() {
+      floorSelect.innerHTML = floors.map(f => `<option value="${f}">${f}</option>`).join("");
+      zoneSelect.innerHTML = zones.map(z => `<option value="${z}">${z}</option>`).join("");
+      floorSelect.value = currentFloor;
+    }
+
+    function renderBoundaryAxes() {
+      axisTopOverlay.innerHTML = axisTopLabels.map((label, i) => `
+        <div class="axis-label-top" style="left:${topBoundaryPositions[i]}px">${label}</div>
+      `).join("");
+
+      axisLeftOverlay.innerHTML = axisLeftLabels.map((label, i) => `
+        <div class="axis-label-left" style="top:${leftBoundaryPositions[i]}px">${label}</div>
+      `).join("");
+    }
+
+    function renderTabs() {
+      floorTabs.innerHTML = floors.map(f => `
+        <button class="tab ${f === currentFloor ? "active" : ""}" data-floor="${f}">${f}</button>
+      `).join("");
+
+      floorTabs.querySelectorAll(".tab").forEach(btn => {
+        btn.addEventListener("click", () => {
+          currentFloor = btn.dataset.floor;
+          floorSelect.value = currentFloor;
+          renderTabs();
+          renderOverallTotals();
+          renderPlan();
+          renderRecords();
+        });
+      });
+    }
+
+    function getColorClass(total) {
+      if (total > 30) return "green";
+      if (total >= 15) return "yellow";
+      if (total >= 5) return "orange";
+      return "red";
+    }
+
+    function emptyZone() {
+      return { iron: 0, carp: 0, concrete: 0, signal: 0, precast: 0, safety: 0, total: 0 };
+    }
+
+    function aggregateByFloor(floor) {
+      const map = {};
+      zones.forEach(z => map[z] = emptyZone());
+
+      records
+        .filter(r => r.floor === floor)
+        .forEach(r => {
+          map[r.zone].iron += +r.iron || 0;
+          map[r.zone].carp += +r.carp || 0;
+          map[r.zone].concrete += +r.concrete || 0;
+          map[r.zone].signal += +r.signal || 0;
+          map[r.zone].precast += +r.precast || 0;
+          map[r.zone].safety += +r.safety || 0;
+        });
+
+      Object.keys(map).forEach(z => {
+        const v = map[z];
+        v.total = v.iron + v.carp + v.concrete + v.signal + v.precast + v.safety;
+      });
+
+      return map;
+    }
+
+    function renderOverallTotals() {
+      const totalsByFloor = floors.map(floor => {
+        const agg = aggregateByFloor(floor);
+        const total = Object.values(agg).reduce((sum, z) => sum + z.total, 0);
+        return { floor, total };
+      });
+
+      const allLevelTotal = totalsByFloor.reduce((sum, item) => sum + item.total, 0);
+
+      allLevelTotalStat.innerHTML = `All level total manpower: <strong>${allLevelTotal}</strong>`;
+      levelBreakdown.innerHTML = totalsByFloor
+        .map(item => `${item.floor}: <strong>${item.total}</strong>`)
+        .join(" &nbsp; | &nbsp; ");
+    }
+
+    function renderZoneMarkup(floor, zone, v, classPrefix = "zone") {
+      const colorClass = getColorClass(v.total);
+      return `
+        <div class="${classPrefix} ${colorClass}" title="${floor} Zone ${zone} | Total ${v.total}">
+          <div class="label strong span-2">Floor</div><div class="value strong span-2">${floor}</div>
+          <div class="label strong span-2">Zone</div><div class="value strong span-2">${zone}</div>
+          <div class="label strong span-2">Total Manpower</div><div class="value strong span-2">${v.total}</div>
+
+          <div class="label">Rebar</div><div class="value">${v.iron}</div>
+          <div class="label">Formwork</div><div class="value">${v.carp}</div>
+
+          <div class="label">Concrete</div><div class="value">${v.concrete}</div>
+          <div class="label">Precast</div><div class="value">${v.precast}</div>
+
+          <div class="label">Signal</div><div class="value">${v.signal}</div>
+          <div class="label">Safety</div><div class="value">${v.safety}</div>
+        </div>
+      `;
+    }
+
+    function renderPlan() {
+      const agg = aggregateByFloor(currentFloor);
+      planTitle.textContent = `CTR Micron Manpower Heatmap - ${currentFloor}`;
+
+      const floorTotal = Object.values(agg).reduce((sum, z) => sum + z.total, 0);
+      const activeZones = Object.values(agg).filter(z => z.total > 0).length;
+      const busiest = Object.entries(agg).sort((a,b) => b[1].total - a[1].total)[0];
+
+      floorStats.innerHTML = `
+        <div class="stat">Floor total: <strong>${floorTotal}</strong></div>
+        <div class="stat">Active zones: <strong>${activeZones}</strong></div>
+        <div class="stat">Busiest: <strong>${busiest ? busiest[0] : "-"}</strong></div>
+      `;
+
+      const html = [];
+      planGrid.forEach(row => {
+        row.forEach(zone => {
+          if (!zone) {
+            html.push(`<div class="zone spacer"></div>`);
+            return;
+          }
+          const v = agg[zone] || emptyZone();
+          html.push(renderZoneMarkup(currentFloor, zone, v, "zone"));
+        });
+      });
+
+      plan.innerHTML = html.join("");
+    }
+
+    function renderRecords() {
+      const filtered = records.filter(r => r.floor === currentFloor);
+      recordsBody.innerHTML = filtered.map(r => {
+        const total = (+r.iron||0)+(+r.carp||0)+(+r.concrete||0)+(+r.signal||0)+(+r.precast||0)+(+r.safety||0);
+        const originalIndex = records.findIndex(x => x === r);
+        return `
+          <tr>
+            <td>${escapeHtml(r.supervisor)}</td>
+            <td>${r.floor}</td>
+            <td>${r.zone}</td>
+            <td>${total}</td>
+            <td><button data-delete="${originalIndex}">Delete</button></td>
+          </tr>
+        `;
+      }).join("");
+
+      recordsBody.querySelectorAll("button[data-delete]").forEach(btn => {
+        btn.addEventListener("click", () => {
+          const idx = Number(btn.dataset.delete);
+          records.splice(idx, 1);
+          persist();
+          renderOverallTotals();
+          renderRecords();
+          renderPlan();
+        });
+      });
+    }
+
+    function bindEvents() {
+      document.getElementById("saveBtn").addEventListener("click", saveRecord);
+
+      document.getElementById("clearBtn").addEventListener("click", () => {
+        if (!confirm("Clear all saved data?")) return;
+        records = [];
+        persist();
+        renderOverallTotals();
+        renderRecords();
+        renderPlan();
+      });
+
+      document.getElementById("downloadHeatmapBtn").addEventListener("click", downloadHeatmapPdf);
+
+      reportDate.addEventListener("change", () => {
+        localStorage.setItem(DATE_KEY, reportDate.value);
+        downloadDate.value = reportDate.value;
+      });
+
+      floorSelect.addEventListener("change", () => {
+        currentFloor = floorSelect.value;
+        renderTabs();
+        renderOverallTotals();
+        renderPlan();
+        renderRecords();
+      });
+    }
+
+    async function downloadHeatmapPdf() {
+      const selectedDate = downloadDate.value || reportDate.value || new Date().toISOString().slice(0, 10);
+      pdfStage.innerHTML = buildPdfPages(selectedDate);
+
+      const { jsPDF } = window.jspdf;
+      const pdf = new jsPDF({
+        orientation: "portrait",
+        unit: "px",
+        format: [1100, 1500]
+      });
+
+      const pages = Array.from(pdfStage.querySelectorAll(".pdf-page"));
+
+      for (let i = 0; i < pages.length; i++) {
+        const canvas = await html2canvas(pages[i], {
+          scale: 2,
+          backgroundColor: "#ffffff",
+          useCORS: true
+        });
+        const imgData = canvas.toDataURL("image/png");
+
+        if (i > 0) pdf.addPage([1100, 1500], "portrait");
+        pdf.addImage(imgData, "PNG", 0, 0, 1100, 1500);
+      }
+
+      pdf.save(`CTR_Micron_Manpower_Heatmap_${selectedDate}.pdf`);
+    }
+
+    function buildPdfPages(selectedDate) {
+      const totalsByFloor = floors.map(floor => {
+        const agg = aggregateByFloor(floor);
+        const total = Object.values(agg).reduce((sum, z) => sum + z.total, 0);
+        return { floor, total };
+      });
+
+      const allLevelTotal = totalsByFloor.reduce((sum, item) => sum + item.total, 0);
+
+      return floors.map(floor => {
+        const agg = aggregateByFloor(floor);
+        const blocks = [];
+
+        planGrid.forEach(row => {
+          row.forEach(zone => {
+            if (!zone) {
+              blocks.push(`<div class="pdf-zone spacer"></div>`);
+              return;
+            }
+            const v = agg[zone] || emptyZone();
+            blocks.push(renderZoneMarkup(floor, zone, v, "pdf-zone"));
+          });
+        });
+
+        const floorTotal = Object.values(agg).reduce((sum, z) => sum + z.total, 0);
+        const activeZones = Object.values(agg).filter(z => z.total > 0).length;
+        const busiest = Object.entries(agg).sort((a,b) => b[1].total - a[1].total)[0];
+
+        const pdfTopHtml = axisTopLabels.map((label, i) => `
+          <div class="pdf-axis-label-top" style="left:${pdfTopBoundaryPositions[i]}px">${label}</div>
+        `).join("");
+
+        const pdfLeftHtml = axisLeftLabels.map((label, i) => `
+          <div class="pdf-axis-label-left" style="top:${pdfLeftBoundaryPositions[i]}px">${label}</div>
+        `).join("");
+
+        return `
+          <div class="pdf-page">
+            <div class="pdf-header-grid">
+              <div class="pdf-panel">
+                <div class="pdf-title">CTR Micron Manpower Heatmap</div>
+                <div class="pdf-controls-row">
+                  <div class="pdf-date-box">Report Date: ${selectedDate}</div>
+                  <div class="pdf-total-box">All level total manpower: ${allLevelTotal}</div>
+                </div>
+                <div class="pdf-level-breakdown">
+                  ${totalsByFloor.map(item => `${item.floor}: <strong>${item.total}</strong>`).join(" &nbsp; | &nbsp; ")}
+                </div>
+              </div>
+
+              <div class="pdf-panel">
+                <div style="font-size:22px;font-weight:700;margin-bottom:10px;">Download tools</div>
+                <div class="pdf-right-note">
+                  This PDF contains one printed page per floor.<br/>
+                  Floor: <strong>${floor}</strong><br/>
+                  Report date: <strong>${selectedDate}</strong>
+                </div>
+              </div>
+            </div>
+
+            <div class="pdf-main-panel">
+              <div class="pdf-plan-header">
+                <div>
+                  <div class="pdf-floor-title">CTR Micron Manpower Heatmap - ${floor}</div>
+                  <div class="pdf-tabs-static">
+                    ${floors.map(f => `<div class="pdf-tab ${f === floor ? "active" : ""}">${f}</div>`).join("")}
+                  </div>
+                </div>
+
+                <div class="pdf-stats">
+                  <div class="pdf-stat">Floor total: <strong>${floorTotal}</strong></div>
+                  <div class="pdf-stat">Active zones: <strong>${activeZones}</strong></div>
+                  <div class="pdf-stat">Busiest: <strong>${busiest ? busiest[0] : "-"}</strong></div>
+                </div>
+              </div>
+
+              <div class="pdf-heatmap-stage">
+                <div class="pdf-axis-top-overlay">${pdfTopHtml}</div>
+                <div class="pdf-axis-left-overlay">${pdfLeftHtml}</div>
+                <div class="pdf-plan">${blocks.join("")}</div>
+              </div>
+            </div>
+          </div>
+        `;
+      }).join("");
+    }
+
+    function saveRecord() {
+      const record = {
+        supervisor: document.getElementById("supervisor").value.trim() || "-",
+        floor: document.getElementById("floor").value,
+        zone: document.getElementById("zone").value,
+        iron: num("iron"),
+        carp: num("carp"),
+        concrete: num("concrete"),
+        signal: num("signal"),
+        precast: num("precast"),
+        safety: num("safety")
+      };
+
+      const existing = records.find(
+        r => r.supervisor === record.supervisor &&
+             r.floor === record.floor &&
+             r.zone === record.zone
+      );
+
+      if (existing) {
+        existing.iron = record.iron;
+        existing.carp = record.carp;
+        existing.concrete = record.concrete;
+        existing.signal = record.signal;
+        existing.precast = record.precast;
+        existing.safety = record.safety;
+      } else {
+        records.push(record);
+      }
+
+      currentFloor = record.floor;
+      floorSelect.value = currentFloor;
+      persist();
+      renderTabs();
+      renderOverallTotals();
+      renderPlan();
+      renderRecords();
+    }
+
+    function num(id) {
+      return Math.max(0, Number(document.getElementById(id).value || 0));
+    }
+
+    function persist() {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(records));
+    }
+
+    function loadRecords() {
+      try {
+        const raw = localStorage.getItem(STORAGE_KEY);
+        return raw ? JSON.parse(raw) : structuredClone(defaultData);
+      } catch {
+        return structuredClone(defaultData);
+      }
+    }
+
+    function escapeHtml(str) {
+      return String(str)
+        .replaceAll("&", "&amp;")
+        .replaceAll("<", "&lt;")
+        .replaceAll(">", "&gt;")
+        .replaceAll('"', "&quot;")
+        .replaceAll("'", "&#039;");
+    }
+
+    init();
+  </script>
+</body>
+</html>
